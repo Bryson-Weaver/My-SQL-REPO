@@ -1,0 +1,154 @@
+--Display the USERID of any users who have not made an order
+SELECT USERID
+FROM UserBase
+MINUS
+SELECT USERID
+FROM Orders;
+
+--Display the PRODUCTCODE of any products that have no reviews
+SELECT PRODUCTCODE
+FROM ProductList
+MINUS
+SELECT PRODUCTCODE
+FROM Reviews;
+
+--Display all data in the USERBASE table. Show another column that states “Adult” for any user that is at least 18 years old, and “Minor'' for all other users
+SELECT A.*, 
+'ADULT' AS "Age Group"
+FROM UserBase A
+WHERE Birthday <= add_months(sysdate, -216) --this is 18 years in the past (18*12 months=216 months)
+UNION
+SELECT B.*, 
+'MINOR' AS "Age Group"
+FROM UserBase B
+WHERE NOT Birthday <= add_months(sysdate, -216);
+
+--Display all data in the PRODUCTLIST table. Show another column that states “On Sale” for any product that is priced at $20 or less, and “Base Price” for all other products.
+SELECT A.*, 
+'ON SALE' AS "Sales Item"
+FROM ProductList A
+WHERE Price <= 20
+UNION
+SELECT B.*, 
+'BASE PRICE' AS "Sales Item"
+FROM ProductList B
+WHERE NOT Price <= 20;
+
+--Display the USERID of any user who has played the product with a PRODUCTCODE of GAME6 and has a user profile image.
+SELECT USERID
+FROM UserLibrary
+WHERE PRODUCTCODE = 'GAME6'
+INTERSECT
+SELECT USERID
+FROM UserProfile
+WHERE IMAGEFILE IS NOT NULL;
+
+--Display any PRODUCTCODE from the intersect of the WISHLIST and REVIEWS table, where the product is in POSITION 1 or 2, and has a review RATING of 3 or higher
+SELECT PRODUCTCODE
+FROM Wishlist
+WHERE POSITION IN (1, 2)
+INTERSECT
+SELECT PRODUCTCODE
+FROM Reviews
+WHERE RATING >= 3;
+
+--Display both user’s USERNAME and BIRTHDAY for any users who share the same BIRTHDAY
+SELECT A.USERNAME, b.USERNAME, A.BIRTHDAY
+FROM UserBase A, UserBase B
+WHERE A.BIRTHDAY = B.BIRTHDAY
+AND A.USERID <> B.USERID; --to avoid matching the same user
+
+--Display the Cartesian Product of the USERLIBRARY table cross joined with the WISHLIST table
+SELECT COUNT(*) as "Cartesian Product"
+FROM UserLibrary
+CROSS JOIN Wishlist;
+
+--Perform a union all on the USERBASE and PRODUCTLIST tables to generate data on all users and products.
+SELECT USERNAME
+FROM UserBase
+UNION ALL
+SELECT Publisher
+FROM ProductList;
+
+--Perform a union all on the CHATLOG and USERPROFILE tables to generate data on user activity.
+SELECT RECEIVERID, CONTENT
+FROM CHATLOG
+UNION ALL
+SELECT USERID, DESCRIPTION
+FROM USERPROFILE;
+
+--Display the USERNAME of all users who have not received an INFRACTION
+SELECT USERID
+FROM UserBase
+LEFT OUTER JOIN Infractions
+ON UserBase.USERID = Infractions.USERID
+WHERE Infractions.USERID IS NULL;
+
+--Display the TITLE and DESCRIPTION of any COMMUNITYRULES that have not been broken
+SELECT TITLE, DESCRIPTION
+FROM CommunityRules
+LEFT OUTER JOIN Infractions
+ON CommunityRules.RULENUM = Infractions.RULENUM
+WHERE Infractions.RULENUM IS NULL;
+
+--Display the USERNAME and EMAIL of all users who have received a penalty for their INFRACTION.
+SELECT USERNAME, EMAIL
+FROM UserBase
+INNER JOIN Infractions
+ON UserBase.USERID = Infractions.USERID;
+
+--Display the dates where an INFRACTION was assigned and a USERSUPPORT ticket was submitted on the same day.
+SELECT DATESUBMITTED
+FROM USERSUPPORT
+INTERSECT
+SELECT DATEASSIGNED
+FROM INFRACTIONS;
+
+--Display every COMMUNITYRULES TITLE and PENALTY
+SELECT TITLE, PENALTY
+FROM CommunityRules
+INNER JOIN Infractions
+ON CommunityRules.RULENUM = Infractions.RULENUM;
+
+--Display all data in the COMMUNITYRULES table. Show another column that states “Bannable'' for any rule with a 10 or higher SEVERITYPOINT, and “Appealable” for all other rules
+SELECT A.*, 
+'BANNABLE' AS "Rule Type"
+FROM CommunityRules A
+WHERE SEVERITYPOINT >= 10
+UNION
+SELECT B.*, 
+'APPEALABLE' AS "Rule Type"
+FROM CommunityRules B
+WHERE NOT SEVERITYPOINT >= 10;
+
+--Display all data in the USERSUPPORT table. Show another column that states “High Priority” for any ticket that is not closed and has not been updated in the past week.
+SELECT A.*, 
+'HIGH PRIORITY' AS "Priority Level"
+FROM UserSupport A
+WHERE STATUS <> 'CLOSED'
+UNION
+SELECT a.*, 
+'Closed'
+FROM UserSupport a
+WHERE NOT (STATUS <> 'CLOSED')
+
+--Display the Cartesian Product of the USERSUPPORT table cross joined with the INFRACTIONS table
+SELECT COUNT(*) as "Cartesian Product"
+FROM UserSupport
+CROSS JOIN Infractions;
+
+--Display both TICKETIDs and DATEUPDATED for any support tickets that are ‘CLOSED’ and the last DATEUPDATED was on the same day.
+SELECT a.TICKETID, b.TICKETID, a.DATEUPDATED
+FROM UserSupport a, UserSupport b
+WHERE a.TICKETID != b.TICKETID
+AND a.DATEUPDATED = b.DATEUPDATED
+AND a.STATUS = 'CLOSED'
+AND b.STATUS = 'CLOSED';
+
+--Perform a union all on the USERBASE and INFRACTIONS tables to generate data on user activity
+SELECT USERID, USERNAME
+FROM UserBase
+UNION ALL
+SELECT InfractionID, Penalty
+FROM Infractions;
+
